@@ -69,7 +69,7 @@ public class Point implements Comparable<Point> {
      * @return the slope between this point and the specified point
      */
     public double slopeTo(Point that) {
-        if (compareTo(that) > 0) {
+        if (compareTo(that) == 0) {
             return Double.NEGATIVE_INFINITY;
         }
         else if (this.x == that.x) {
@@ -120,6 +120,12 @@ public class Point implements Comparable<Point> {
      * Unit tests the Point data type.
      */
     public static void main(String[] args) {
-        /* YOUR CODE HERE */
+        Point p = new Point(156, 384);
+        Point q = new Point(156, 20);
+        System.out.println(p.slopeTo(q));
+
+        p = new Point(366, 211);
+        q = new Point(366, 217);
+        System.out.println(p.slopeTo(q));
     }
 }
