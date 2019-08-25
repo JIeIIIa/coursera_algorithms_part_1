@@ -75,8 +75,11 @@ public class Point implements Comparable<Point> {
         else if (this.x == that.x) {
             return Double.POSITIVE_INFINITY;
         }
+        else if (this.y == that.y) {
+            return +0.0;
+        }
         else {
-            return (that.y - this.y) * 1.0 / (that.x - this.x);
+            return (this.y - that.y) * 1.0 / (this.x - that.x);
         }
     }
 
@@ -101,7 +104,7 @@ public class Point implements Comparable<Point> {
      * @return the Comparator that defines this ordering on points
      */
     public Comparator<Point> slopeOrder() {
-        return SLOPE_ORDER_COMPORATOR;
+        return (a, b) -> Double.compare(this.slopeTo(a), this.slopeTo(b));
     }
 
 
@@ -122,10 +125,27 @@ public class Point implements Comparable<Point> {
     public static void main(String[] args) {
         Point p = new Point(156, 384);
         Point q = new Point(156, 20);
-        System.out.println(p.slopeTo(q));
+        System.out.println(p.slopeTo(q) + " == Infinity");
 
         p = new Point(366, 211);
         q = new Point(366, 217);
-        System.out.println(p.slopeTo(q));
+        System.out.println(p.slopeTo(q) + " == Infinity");
+
+        p = new Point(387, 238);
+        q = new Point(149, 238);
+        System.out.println(p.slopeTo(q) + " == +0.0");
+
+        p = new Point(33, 323);
+        q = new Point(463, 323);
+        System.out.println(p.slopeTo(q) + " == +0.0");
+
+        p = new Point(77, 58);
+        q = new Point(77, 114);
+        System.out.println(p.slopeTo(q) + " == Infinity");
+
+        p = new Point(219, 477);
+        q = new Point(5, 348);
+        Point r = new Point(164, 130);
+        System.out.println(p.slopeOrder().compare(q, r) + " == -1");
     }
 }
