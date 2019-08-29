@@ -15,6 +15,18 @@ public class FastCollinearPoints {
 
     private final List<LineSegment> segments = new LinkedList<>();
 
+    private class Item {
+        private final Point point;
+        private final double slopeTo;
+        private final int thatCompareTo;
+
+        private Item(final Point point, final double slopeTo, final int thatCompareTo) {
+            this.point = point;
+            this.slopeTo = slopeTo;
+            this.thatCompareTo = thatCompareTo;
+        }
+    }
+
     // finds all line segments containing 4 or more points
     public FastCollinearPoints(Point[] points) {
         if (points == null) {
@@ -25,53 +37,47 @@ public class FastCollinearPoints {
                 throw new IllegalArgumentException();
             }
         }
-        checkDuplicates(points);
 
-        Point[] aux = new Point[points.length];
+
+        // checkDuplicates(points);
+
+        Item[] items = new Item[points.length];
+
+        // Point[] aux = new Point[points.length];
         for (int i = 0; i < points.length; i++) {
             for (int j = 0; j < points.length; j++) {
-                aux[j] = points[j];
+                items[j] = new Item(points[j], points[i].slopeTo(points[j]),
+                                    points[i].compareTo(points[j]));
             }
-            double[] slopes = calcSlopes(aux, points[i]);
-            // System.out.println("Before sort: " + Arrays.toString(slopes));
-            sort(aux, points[i]);
-            // slopes = calcSlopes(aux, points[i]);
-            // StdOut.println("After sort : " + Arrays.toString(slopes));
+            sort(items);
 
             int lo = 0;
             int hi = 0;
-            double slope = points[i].slopeTo(aux[0]);
-            for (int j = 1; j < aux.length; j++) {
-                double slopeJ = points[i].slopeTo(aux[j]);
-                if (points[i].compareTo(aux[j]) == 0) {
-                    // hi = j;
-                    slope = slopeJ;
+            double slope = items[0].slopeTo;
+            for (int j = 1; j < items.length; j++) {
+
+                if (points[i] == items[j].point) {
+                    slope = items[j].slopeTo;
                 }
-                else if (Double.compare(slope, slopeJ) == 0) {
+                else if (items[j].thatCompareTo == 0) {
+                    throw new IllegalArgumentException();
+                }
+                else if (Double.compare(slope, items[j].slopeTo) == 0) {
                     hi = j;
                 }
                 else {
-                    if (hi - lo >= 2 && points[i].compareTo(aux[lo]) < 0) {
-                        segments.add(new LineSegment(points[i], aux[hi]));
+                    if (hi - lo >= 2 && items[lo].thatCompareTo < 0) {
+                        segments.add(new LineSegment(points[i], items[hi].point));
                     }
                     lo = j;
                     hi = j;
-                    slope = slopeJ;
+                    slope = items[j].slopeTo;
                 }
             }
-            if (hi - lo >= 2 &&  points[i].compareTo(aux[lo]) < 0) {
-                segments.add(new LineSegment(points[i], aux[hi]));
+            if (hi - lo >= 2 && items[lo].thatCompareTo < 0) {
+                segments.add(new LineSegment(points[i], items[hi].point));
             }
         }
-    }
-
-    private double[] calcSlopes(Point[] points, Point point) {
-        double[] slopes = new double[points.length];
-        for (int j = 0; j < points.length; j++) {
-            slopes[j] = point.slopeTo(points[j]);
-        }
-
-        return slopes;
     }
 
     private void checkDuplicates(Point[] points) {
@@ -84,22 +90,22 @@ public class FastCollinearPoints {
         }
     }
 
-    private void sort(Point[] a, Point p) {
-        Point[] aux = new Point[a.length];
-        sort(a, aux, p, 0, a.length - 1);
+    private void sort(Item[] a) {
+        Item[] aux = new Item[a.length];
+        sort(a, aux, 0, a.length - 1);
     }
 
-    private void sort(Point[] a, Point[] aux, Point p, int lo, int hi) {
+    private void sort(Item[] a, Item[] aux, int lo, int hi) {
         if (hi <= lo) {
             return;
         }
         int mid = lo + (hi - lo) / 2;
-        sort(a, aux, p, lo, mid);
-        sort(a, aux, p, mid + 1, hi);
-        merge(a, aux, p, lo, mid, hi);
+        sort(a, aux, lo, mid);
+        sort(a, aux, mid + 1, hi);
+        merge(a, aux, lo, mid, hi);
     }
 
-    private void merge(Point[] a, Point[] aux, Point p, int lo, int mid, int hi) {
+    private void merge(Item[] a, Item[] aux, int lo, int mid, int hi) {
         for (int k = lo; k <= hi; k++) {
             aux[k] = a[k];
         }
@@ -113,13 +119,15 @@ public class FastCollinearPoints {
             else if (j > hi) {
                 a[k] = aux[i++];
             }
-            else if (p.slopeOrder().compare(aux[i], aux[j]) < 0 ||
-                    (p.slopeOrder().compare(aux[i], aux[j]) == 0
-                            && aux[i].compareTo(aux[j]) < 0)) {
-                a[k] = aux[i++];
-            }
             else {
-                a[k] = aux[j++];
+                int compare = Double.compare(aux[i].slopeTo, aux[j].slopeTo);
+                if (compare < 0 ||
+                        (compare == 0 && aux[i].point.compareTo(aux[j].point) < 0)) {
+                    a[k] = aux[i++];
+                }
+                else {
+                    a[k] = aux[j++];
+                }
             }
         }
     }
