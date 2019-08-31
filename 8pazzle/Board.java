@@ -13,16 +13,12 @@ import java.util.Iterator;
 
 public class Board {
     private final int[][] tiles;
-    private final int dimension;
-    private final int[] twinElements;
-
 
     // create a board from an n-by-n array of tiles,
     // where tiles[row][col] = tile at (row, col)
     public Board(int[][] tiles) {
         this.tiles = deepCopy(tiles);
-        this.dimension = tiles.length;
-        this.twinElements = createTwinElements();
+        // this.twinElements = createTwinElements();
     }
 
     // string representation of this board
@@ -44,11 +40,12 @@ public class Board {
 
     // board dimension n
     public int dimension() {
-        return this.dimension;
+        return tiles.length;
     }
 
     // number of tiles out of place
     public int hamming() {
+        int dimension = tiles.length;
         int count = 0;
         for (int i = 0; i < dimension * dimension; i++) {
             int cell = tiles[i / dimension][i % dimension];
@@ -61,6 +58,7 @@ public class Board {
 
     // sum of Manhattan distances between tiles and goal
     public int manhattan() {
+        int dimension = tiles.length;
         int result = 0;
         for (int i = 0; i < dimension * dimension; i++) {
             int row = i / dimension;
@@ -76,6 +74,7 @@ public class Board {
 
     // is this board the goal board?
     public boolean isGoal() {
+        int dimension = tiles.length;
         for (int i = 0; i < dimension * dimension - 1; i++) {
             if (tiles[i / dimension][i % dimension] != i + 1) {
                 return false;
@@ -97,6 +96,7 @@ public class Board {
     // all neighboring boards
     public Iterable<Board> neighbors() {
         final int zeroPos = findZero();
+        int dimension = tiles.length;
         final int row = zeroPos / dimension;
         final int col = zeroPos % dimension;
 
@@ -107,30 +107,23 @@ public class Board {
         if (col == 0 || col == dimension - 1) {
             size--;
         }
-        final Board[] boards = new Board[size];
-        for (int i = 0; i < boards.length; i++) {
-            boards[i] = new Board(deepCopy(tiles));
-        }
+        final Direction[] moves = new Direction[size];
 
         int p = 0;
         if (row != 0) {
-            boards[p].tiles[row][col] = tiles[row - 1][col];
-            boards[p].tiles[row - 1][col] = 0;
+            moves[p] = Direction.TOP;
             p++;
         }
         if (row != dimension - 1) {
-            boards[p].tiles[row][col] = tiles[row + 1][col];
-            boards[p].tiles[row + 1][col] = 0;
+            moves[p] = Direction.BOTTOM;
             p++;
         }
         if (col != 0) {
-            boards[p].tiles[row][col] = tiles[row][col - 1];
-            boards[p].tiles[row][col - 1] = 0;
+            moves[p] = Direction.LEFT;
             p++;
         }
         if (col != dimension - 1) {
-            boards[p].tiles[row][col] = tiles[row][col + 1];
-            boards[p].tiles[row][col + 1] = 0;
+            moves[p] = Direction.RIGHT;
         }
 
         return () -> new Iterator<Board>() {
@@ -138,17 +131,24 @@ public class Board {
 
             @Override
             public boolean hasNext() {
-                return pos < boards.length;
+                return pos < moves.length;
             }
 
             @Override
             public Board next() {
-                return boards[pos++];
+                Direction move = moves[pos++];
+                Board board = new Board(deepCopy(tiles));
+
+                board.tiles[row][col] = tiles[row + move.row][col + move.col];
+                board.tiles[row + move.row][col + move.col] = 0;
+
+                return board;
             }
         };
     }
 
     private int findZero() {
+        int dimension = tiles.length;
         for (int i = 0; i < dimension * dimension; i++) {
             if (tiles[i / dimension][i % dimension] == 0) {
                 return i;
@@ -160,6 +160,7 @@ public class Board {
     // a board that is obtained by exchanging any pair of tiles
     public Board twin() {
         Board twin = new Board(deepCopy(tiles));
+        int[] twinElements = createTwinElements();
         swap(twin.tiles, twinElements[0], twinElements[1]);
         if (this.equals(twin)) {
             throw new IllegalArgumentException("Wrong twin");
@@ -171,23 +172,27 @@ public class Board {
     private int[] createTwinElements() {
         int i;
         int j;
+        int dimension = tiles.length;
         int size = dimension * dimension;
-        do {
+        for (Direction d : Direction.values()) {
+            i = 0;
+            if (tiles[0][0] == 0) {
+                i = 1;
+            }
 
-            i = StdRandom.uniform(size);
-            Direction d = Direction.rnd();
             j = (i / dimension + d.row) * dimension +
                     (i % dimension + d.col + dimension) % dimension;
+            if ((0 <= j && j < size
+                    && tiles[i / dimension][i % dimension] != 0
+                    && tiles[j / dimension][j % dimension] != 0)) {
+                return new int[] { i, j };
+            }
         }
-        while (j < 0 || j >= size
-                || tiles[i / dimension][i % dimension] == 0
-                || tiles[j / dimension][j % dimension] == 0);
-
-
-        return new int[] { i, j };
+        return new int[] { 0, 1 };
     }
 
     private void swap(int[][] arr, int a, int b) {
+        int dimension = tiles.length;
         int tmp = arr[a / dimension][a % dimension];
         arr[a / dimension][a % dimension] = arr[b / dimension][b % dimension];
         arr[b / dimension][b % dimension] = tmp;
@@ -247,7 +252,7 @@ enum Direction {
     public int row;
     public int col;
 
-    Direction(int col, int row) {
+    Direction(int row, int col) {
         this.row = row;
         this.col = col;
     }
