@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-FILENAME=8pazzle
+FILENAME=8puzzle
 
 echo "Deleting ../submission/$FILENAME.zip"
 rm -f ../submission/$FILENAME.zip
