@@ -16,10 +16,15 @@ public class KdTree {
         private Node right;
         private int height;
 
+        Node(Point2D point) {
+            this.point = point;
+        }
+
         Node(Point2D point, int height) {
             this.point = point;
             this.height = height;
         }
+
     }
 
     private Node root = null;
@@ -31,7 +36,7 @@ public class KdTree {
 
     // is the set empty?
     public boolean isEmpty() {
-        return root == null;
+        return size == 0;
     }
 
     // number of points in the set
@@ -44,11 +49,73 @@ public class KdTree {
         if (p == null) {
             throw new IllegalArgumentException();
         }
+        Node node = new Node(p);
+        if (root == null) {
+            root = node;
+            size++;
+        }
+        else {
+            if (insert(p, root)) {
+                size++;
+            }
+        }
+    }
+
+    private boolean insert(Point2D p, Node parent) {
+        if (p.equals(parent.point)) {
+            return false;
+        }
+        if (compare(p, parent) <= 0) {
+            if (parent.left == null) {
+                parent.left = new Node(p, parent.height + 1);
+                return true;
+            }
+            else {
+                return insert(p, parent.left);
+            }
+        }
+        else {
+            if (parent.right == null) {
+                parent.right = new Node(p, parent.height + 1);
+                return true;
+            }
+            else {
+                return insert(p, parent.right);
+            }
+        }
+    }
+
+    private int compare(Point2D p, Node node) {
+        if (node.height % 2 == 0) {
+            return Double.compare(p.x(), node.point.x());
+        }
+        else {
+            return Double.compare(p.y(), node.point.y());
+        }
     }
 
     // does the set contain point p?
     public boolean contains(Point2D p) {
-        return false;
+        if (p == null) {
+            throw new IllegalArgumentException();
+        }
+
+        return contains(p, root);
+    }
+
+    private boolean contains(Point2D p, Node node) {
+        if (node == null) {
+            return false;
+        }
+        else if (p.equals(node.point)) {
+            return true;
+        }
+        else if (compare(p, node) <= 0) {
+            return contains(p, node.left);
+        }
+        else {
+            return contains(p, node.right);
+        }
     }
 
     // draw all points to standard draw
@@ -60,7 +127,7 @@ public class KdTree {
 
     // all points that are inside the rectangle (or on the boundary)
     public Iterable<Point2D> range(RectHV rect) {
-        return ()->new Iterator<Point2D>() {
+        return () -> new Iterator<Point2D>() {
             @Override
             public boolean hasNext() {
                 return false;
