@@ -8,14 +8,13 @@
 import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.Point2D;
 import edu.princeton.cs.algs4.RectHV;
+import edu.princeton.cs.algs4.SET;
 import edu.princeton.cs.algs4.StdDraw;
 import edu.princeton.cs.algs4.StdOut;
 
-import java.util.Iterator;
-
 public class KdTree {
     private class Node {
-        private Point2D point;
+        private final Point2D point;
         private Node left;
         private Node right;
         private int height;
@@ -164,17 +163,42 @@ public class KdTree {
 
     // all points that are inside the rectangle (or on the boundary)
     public Iterable<Point2D> range(RectHV rect) {
-        return () -> new Iterator<Point2D>() {
-            @Override
-            public boolean hasNext() {
-                return false;
-            }
+        if (rect == null) {
+            throw new IllegalArgumentException();
+        }
 
-            @Override
-            public Point2D next() {
-                return null;
+        SET<Point2D> set = new SET<>();
+        range(root, rect, set);
+
+        return set;
+    }
+
+    private void range(Node node, RectHV rect, SET<Point2D> set) {
+        if (node == null) {
+            return;
+        }
+        Point2D point = node.point;
+
+        if (rect.contains(point)) {
+            set.add(point);
+        }
+
+        if (node.height % 2 == 0) {
+            if (point.x() >= rect.xmin()) {
+                range(node.left, rect, set);
             }
-        };
+            if (point.x() <= rect.xmax()) {
+                range(node.right, rect, set);
+            }
+        }
+        else {
+            if (point.y() >= rect.ymin()) {
+                range(node.left, rect, set);
+            }
+            if (point.y() <= rect.ymax()) {
+                range(node.right, rect, set);
+            }
+        }
     }
 
     // a nearest neighbor in the set to point p; null if the set is empty
@@ -191,11 +215,12 @@ public class KdTree {
             return champion;
         }
         Point2D point = node.point;
-        if (champion == null || point.distanceTo(target) < target.distanceTo(champion)) {
+        if (champion == null ||
+                point.distanceSquaredTo(target) < target.distanceSquaredTo(champion)) {
             champion = node.point;
         }
         else if (!rect.contains(target)
-                && rect.distanceTo(target) >= target.distanceTo(champion)) {
+                && rect.distanceSquaredTo(target) >= target.distanceSquaredTo(champion)) {
             return champion;
         }
 

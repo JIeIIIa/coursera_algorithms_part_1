@@ -13,7 +13,7 @@ import java.util.LinkedList;
 
 public class PointSET {
 
-    private SET<Point2D> set = new SET<>();
+    private final SET<Point2D> set = new SET<>();
 
     // construct an empty set of points
     public PointSET() {
@@ -77,9 +77,9 @@ public class PointSET {
         double minDistance = Double.POSITIVE_INFINITY;
 
         for (Point2D that : set) {
-            if (result == null || p.distanceTo(that) < minDistance) {
+            if (result == null || p.distanceSquaredTo(that) < minDistance) {
                 result = that;
-                minDistance = p.distanceTo(that);
+                minDistance = p.distanceSquaredTo(that);
             }
         }
         return result;
@@ -87,7 +87,7 @@ public class PointSET {
 
     // unit testing of the methods (optional)
     public static void main(String[] args) {
-
+        System.out.println("");
     }
 
 }
