@@ -1,11 +1,15 @@
+
 /* *****************************************************************************
  *  Name:
  *  Date:
  *  Description:
  **************************************************************************** */
 
+import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.Point2D;
 import edu.princeton.cs.algs4.RectHV;
+import edu.princeton.cs.algs4.StdDraw;
+import edu.princeton.cs.algs4.StdOut;
 
 import java.util.Iterator;
 
@@ -110,19 +114,52 @@ public class KdTree {
         else if (p.equals(node.point)) {
             return true;
         }
+        else {
+            return contains(p, getNext(p, node));
+        }
+    }
+
+    private Node getNext(Point2D p, Node node) {
+        if (node == null) {
+            return null;
+        }
         else if (compare(p, node) <= 0) {
-            return contains(p, node.left);
+            return node.left;
         }
         else {
-            return contains(p, node.right);
+            return node.right;
         }
     }
 
     // draw all points to standard draw
     public void draw() {
-        // for (Point2D p : set) {
-        //     StdDraw.point(p.x(), p.y());
-        // }
+        draw(root, new RectHV(0, 0, 1, 1));
+    }
+
+    private void draw(Node node, RectHV rect) {
+        if (node == null) {
+            return;
+        }
+        Point2D p = node.point;
+
+        StdDraw.setPenRadius(0.03);
+        StdDraw.setPenColor(StdDraw.BLACK);
+        StdDraw.point(p.x(), p.y());
+
+        StdDraw.setPenRadius(0.01);
+        if (node.height % 2 == 0) {
+            StdDraw.setPenColor(StdDraw.RED);
+            StdDraw.line(p.x(), rect.ymin(), p.x(), rect.ymax());
+            draw(node.left, new RectHV(rect.xmin(), rect.ymin(), p.x(), rect.ymax()));
+            draw(node.right, new RectHV(p.x(), rect.ymin(), rect.xmax(), rect.ymax()));
+        }
+        else {
+
+            StdDraw.setPenColor(StdDraw.BLUE);
+            StdDraw.line(rect.xmin(), p.y(), rect.xmax(), p.y());
+            draw(node.left, new RectHV(rect.xmin(), rect.ymin(), rect.xmax(), p.y()));
+            draw(node.right, new RectHV(rect.xmin(), p.y(), rect.xmax(), rect.ymax()));
+        }
     }
 
     // all points that are inside the rectangle (or on the boundary)
@@ -142,10 +179,79 @@ public class KdTree {
 
     // a nearest neighbor in the set to point p; null if the set is empty
     public Point2D nearest(Point2D p) {
-        return null;
+        if (p == null) {
+            throw new IllegalArgumentException();
+        }
+
+        return nearest(p, root, null, new RectHV(0, 0, 1, 1));
+    }
+
+    private Point2D nearest(Point2D target, Node node, Point2D champion, RectHV rect) {
+        if (node == null) {
+            return champion;
+        }
+        Point2D point = node.point;
+        if (champion == null || point.distanceTo(target) < target.distanceTo(champion)) {
+            champion = node.point;
+        }
+        else if (!rect.contains(target)
+                && rect.distanceTo(target) >= target.distanceTo(champion)) {
+            return champion;
+        }
+
+        if (compare(target, node) <= 0) {
+            if (node.height % 2 == 0) {
+                RectHV left = new RectHV(rect.xmin(), rect.ymin(), point.x(), rect.ymax());
+                champion = nearest(target, node.left, champion, left);
+
+                RectHV right = new RectHV(point.x(), rect.ymin(), rect.xmax(), rect.ymax());
+                champion = nearest(target, node.right, champion, right);
+            }
+            else {
+                RectHV bottom = new RectHV(rect.xmin(), rect.ymin(), rect.xmax(), point.y());
+                champion = nearest(target, node.left, champion, bottom);
+
+                RectHV top = new RectHV(rect.xmin(), point.y(), rect.xmax(), rect.ymax());
+                champion = nearest(target, node.right, champion, top);
+            }
+        }
+        else {
+            if (node.height % 2 == 0) {
+                RectHV right = new RectHV(point.x(), rect.ymin(), rect.xmax(), rect.ymax());
+                champion = nearest(target, node.right, champion, right);
+
+                RectHV left = new RectHV(rect.xmin(), rect.ymin(), point.x(), rect.ymax());
+                champion = nearest(target, node.left, champion, left);
+            }
+            else {
+                RectHV top = new RectHV(rect.xmin(), point.y(), rect.xmax(), rect.ymax());
+                champion = nearest(target, node.right, champion, top);
+
+                RectHV bottom = new RectHV(rect.xmin(), rect.ymin(), rect.xmax(), point.y());
+                champion = nearest(target, node.left, champion, bottom);
+            }
+        }
+        return champion;
     }
 
     public static void main(String[] args) {
+        // initialize the two data structures with point from file
+        String filename = "input10.txt"; // args[0];
+        In in = new In(filename);
+        KdTree kdtree = new KdTree();
+        while (!in.isEmpty()) {
+            double x = in.readDouble();
+            double y = in.readDouble();
+            Point2D p = new Point2D(x, y);
+            kdtree.insert(p);
+        }
 
+        kdtree.draw();
+        Point2D target = new Point2D(0.318, 0.217);
+        StdDraw.point(target.x(), target.y());
+        Point2D nearest = kdtree.nearest(target);
+        StdDraw.setPenRadius(0.03);
+        StdDraw.point(nearest.x(), nearest.y());
+        StdOut.println(nearest);
     }
 }
